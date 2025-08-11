@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cafe Manager Frontend
+
+A modern Next.js frontend for cafe management with a comprehensive app router structure.
+
+## Features
+
+- **Dashboard**: Overview with key metrics and quick actions
+- **Orders**: Order management and tracking
+- **Menu**: Menu display and management (connected to Django backend)
+- **Inventory**: Stock tracking and management
+- **Reports**: Analytics and performance insights
+- **Settings**: System configuration and preferences
+
+## App Router Structure
+
+```
+app/
+├── page.tsx              # Root page (redirects to dashboard)
+├── layout.tsx            # Root layout with sidebar
+├── dashboard/
+│   └── page.tsx         # Dashboard page
+├── orders/
+│   └── page.tsx         # Orders management
+├── menu/
+│   └── page.tsx         # Menu display (from Django)
+├── inventory/
+│   └── page.tsx         # Inventory management
+├── reports/
+│   └── page.tsx         # Analytics and reports
+└── settings/
+    └── page.tsx         # System settings
+```
+
+## Components
+
+- `Sidebar.tsx`: Navigation sidebar with all main routes
+- `MenuDisplay.tsx`: Menu display component (connects to Django API)
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. Create `.env.local` file:
+   ```env
+   NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Navigation
 
-## Learn More
+The sidebar provides easy access to all main sections:
+- **Dashboard**: Overview and quick actions
+- **Orders**: Manage customer orders
+- **Menu**: View and manage menu items
+- **Inventory**: Track supplies and stock
+- **Reports**: View performance analytics
+- **Settings**: Configure system preferences
 
-To learn more about Next.js, take a look at the following resources:
+## Backend Integration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The frontend is designed to work with the Django backend (`cafe-back`). The menu page demonstrates the API integration using the services created in `lib/services/`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Technologies Used
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 14 with App Router
+- TypeScript
+- Tailwind CSS
+- Lucide React Icons
+- Django REST API (backend)

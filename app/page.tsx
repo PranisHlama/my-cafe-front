@@ -1,7 +1,5 @@
-"use client"
+import { redirect } from 'next/navigation';
 
-import CafeManagementSystem from "../cafe-management"
-
-export default function Page() {
-  return <CafeManagementSystem />
+export default function HomePage() {
+  redirect('/dashboard');
 }

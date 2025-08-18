@@ -27,3 +27,19 @@ export type FormState =
       message?: string
     }
   | undefined
+
+export interface InventoryItem {
+  id: number;
+  name: string;
+  description?: string | null;
+  unit: string;
+  quantity_in_stock: number;
+  reorder_level: number;
+  is_active: boolean;
+  last_updated: string;  // ISO date string from API
+  created: string;       // ISO date string
+  updated: string;       // ISO date string
+  needs_restock: boolean;
+}
+
+

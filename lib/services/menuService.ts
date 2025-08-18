@@ -1,5 +1,6 @@
 // lib/services/menuService.ts
 import { apiClient } from '../api';
+import { InventoryItem } from '../definitions';
 
 export interface Category {
   id: number;
@@ -204,4 +205,54 @@ export class MenuService {
     }
     return response.data || [];
   }
+}
+
+// Inventory
+export async function getInventory(): Promise<InventoryItem[]> {
+  const res = await apiClient.get<InventoryItem[]>("/api/inventory/");
+
+  if (res.error) {
+    console.error("Failed to fetch inventory:", res.error);
+    return [];
+  }
+
+  return res.data || [];
+}
+
+export type InventoryCreateInput = {
+  name: string;
+  description?: string | null;
+  unit: string;
+  quantity_in_stock: number;
+  reorder_level: number;
+  is_active: boolean;
+};
+
+export type InventoryUpdateInput = Partial<InventoryCreateInput>;
+
+export async function createInventoryItem(payload: InventoryCreateInput): Promise<InventoryItem | null> {
+  const res = await apiClient.post<InventoryItem>("/api/inventory/", payload);
+  if (res.error) {
+    console.error("Failed to create inventory item:", res.error);
+    return null;
+  }
+  return res.data ?? null;
+}
+
+export async function updateInventoryItem(id: number, payload: InventoryUpdateInput): Promise<InventoryItem | null> {
+  const res = await apiClient.put<InventoryItem>(`/api/inventory/${id}/`, payload);
+  if (res.error) {
+    console.error("Failed to update inventory item:", res.error);
+    return null;
+  }
+  return res.data ?? null;
+}
+
+export async function deleteInventoryItem(id: number): Promise<boolean> {
+  const res = await apiClient.delete(`/api/inventory/${id}/`);
+  if (res.error) {
+    console.error("Failed to delete inventory item:", res.error);
+    return false;
+  }
+  return true;
 } 

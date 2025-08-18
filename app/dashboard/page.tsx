@@ -1,3 +1,5 @@
+"use client";
+
 import {
   TrendingUp,
   ShoppingCart,
@@ -7,9 +9,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import { DashboardGuard } from '../../components/auth/PermissionGuard';
+
 export default function DashboardPage() {
   return (
-    <div className="p-6">
+    // <DashboardGuard>
+      <div className="p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-2">
@@ -155,5 +160,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    // </DashboardGuard>
   );
 }

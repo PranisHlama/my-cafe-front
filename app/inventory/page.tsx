@@ -1,250 +1,350 @@
-import { Plus, Search, Filter, AlertTriangle, TrendingDown, Package } from "lucide-react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  getInventory,
+  createInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+  InventoryCreateInput,
+  InventoryUpdateInput,
+} from "@/lib/services/menuService";
+import { InventoryItem } from "@/lib/definitions";
+import { DataTable, Column } from "@/components/ui/DataTable";
 
 export default function InventoryPage() {
-  const inventoryItems = [
-    {
-      id: 1,
-      name: "Coffee Beans",
-      category: "Ingredients",
-      quantity: 25,
-      unit: "kg",
-      minThreshold: 5,
-      currentStock: 3,
-      status: "Low Stock",
-      lastUpdated: "2 hours ago"
-    },
-    {
-      id: 2,
-      name: "Milk",
-      category: "Dairy",
-      quantity: 15,
-      unit: "L",
-      minThreshold: 3,
-      currentStock: 8,
-      status: "In Stock",
-      lastUpdated: "1 hour ago"
-    },
-    {
-      id: 3,
-      name: "Sugar",
-      category: "Ingredients",
-      quantity: 8,
-      unit: "kg",
-      minThreshold: 2,
-      currentStock: 1,
-      status: "Critical",
-      lastUpdated: "30 min ago"
-    },
-    {
-      id: 4,
-      name: "Flour",
-      category: "Baking",
-      quantity: 20,
-      unit: "kg",
-      minThreshold: 5,
-      currentStock: 12,
-      status: "In Stock",
-      lastUpdated: "4 hours ago"
-    },
-    {
-      id: 5,
-      name: "Eggs",
-      category: "Dairy",
-      quantity: 120,
-      unit: "pieces",
-      minThreshold: 30,
-      currentStock: 25,
-      status: "Low Stock",
-      lastUpdated: "6 hours ago"
-    }
-  ];
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Critical': return 'bg-red-100 text-red-800';
-      case 'Low Stock': return 'bg-yellow-100 text-yellow-800';
-      case 'In Stock': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  // Modal/form state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [form, setForm] = useState<InventoryCreateInput>({
+    name: "",
+    description: "",
+    unit: "pcs",
+    quantity_in_stock: 0,
+    reorder_level: 0,
+    is_active: true,
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const data = await getInventory();
+        setInventory(data);
+      } catch (error) {
+        console.error("Error fetching inventory:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, []);
+
+  const openCreateModal = () => {
+    setEditingItem(null);
+    setForm({
+      name: "",
+      description: "",
+      unit: "pcs",
+      quantity_in_stock: 0,
+      reorder_level: 0,
+      is_active: true,
+    });
+    setError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item: InventoryItem) => {
+    setEditingItem(item);
+    setForm({
+      name: item.name,
+      description: item.description || "",
+      unit: item.unit,
+      quantity_in_stock: item.quantity_in_stock,
+      reorder_level: item.reorder_level,
+      is_active: item.is_active,
+    });
+    setError(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    if (isSubmitting) return;
+    setIsModalOpen(false);
+  };
+
+  const handleDelete = async (item: InventoryItem) => {
+    const ok = window.confirm(
+      `Delete item \"${item.name}\"? This cannot be undone.`
+    );
+    if (!ok) return;
+    const success = await deleteInventoryItem(item.id);
+    if (success) {
+      setInventory((prev) => prev.filter((i) => i.id !== item.id));
     }
   };
 
-  const getStockPercentage = (current: number, min: number) => {
-    const percentage = (current / min) * 100;
-    if (percentage <= 50) return 'text-red-600';
-    if (percentage <= 100) return 'text-yellow-600';
-    return 'text-green-600';
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (editingItem) {
+        // Update
+        const payload: InventoryUpdateInput = { ...form };
+        const updated = await updateInventoryItem(editingItem.id, payload);
+        if (updated) {
+          setInventory((prev) =>
+            prev.map((i) => (i.id === updated.id ? updated : i))
+          );
+          setIsModalOpen(false);
+        } else {
+          setError("Failed to update item");
+        }
+      } else {
+        // Create
+        const created = await createInventoryItem(form);
+        if (created) {
+          setInventory((prev) => [created, ...prev]);
+          setIsModalOpen(false);
+        } else {
+          setError("Failed to create item");
+        }
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const columns: Column<InventoryItem>[] = useMemo(
+    () => [
+      {
+        key: "name",
+        header: "Name",
+        render: (value) => <span className="font-medium">{value}</span>,
+      },
+      { key: "description", header: "Description" },
+      { key: "quantity_in_stock", header: "Stock" },
+      { key: "unit", header: "Unit" },
+      { key: "reorder_level", header: "Reorder Level" },
+      {
+        key: "needs_restock",
+        header: "Needs Restock",
+        render: (value: boolean) => (
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              value ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+            }`}
+          >
+            {value ? "Yes" : "No"}
+          </span>
+        ),
+      },
+      {
+        key: "is_active",
+        header: "Active",
+        render: (value: boolean) => (
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              value
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {value ? "Active" : "Inactive"}
+          </span>
+        ),
+      },
+      {
+        key: "last_updated",
+        header: "Last Updated",
+        render: (value: string) => new Date(value).toLocaleString(),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        render: (_: any, item) => (
+          <div className="flex items-center gap-2">
+            <button
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                openEditModal(item);
+              }}
+            >
+              Edit
+            </button>
+            <button
+              className="text-red-600 hover:text-red-800 text-sm font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(item);
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [inventory]
+  );
+
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Inventory</h1>
-        <p className="text-gray-600 mt-2">Manage cafe supplies and track stock levels</p>
-      </div>
+    <>
+      <DataTable
+        data={inventory}
+        columns={columns}
+        title="Inventory"
+        description="Manage cafe inventory and stock levels"
+        searchPlaceholder="Search inventory..."
+        newButtonText="New Item"
+        onNewClick={openCreateModal}
+        itemsPerPage={15}
+      />
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Package className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Items</p>
-              <p className="text-2xl font-bold text-gray-900">156</p>
-            </div>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeModal} />
+          <div className="relative z-10 w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {editingItem ? "Edit Item" : "New Item"}
+            </h3>
+
+            {error && (
+              <div className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={form.description || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                  className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unit
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={form.unit}
+                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                    className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reorder Level
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.reorder_level}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        reorder_level: Number(e.target.value),
+                      })
+                    }
+                    className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantity In Stock
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.quantity_in_stock}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        quantity_in_stock: Number(e.target.value),
+                      })
+                    }
+                    className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="is_active"
+                    type="checkbox"
+                    checked={form.is_active}
+                    onChange={(e) =>
+                      setForm({ ...form, is_active: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="is_active" className="text-sm text-gray-700">
+                    Active
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting
+                    ? "Saving..."
+                    : editingItem
+                    ? "Save Changes"
+                    : "Create Item"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Package className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">In Stock</p>
-              <p className="text-2xl font-bold text-gray-900">142</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <AlertTriangle className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Low Stock</p>
-              <p className="text-2xl font-bold text-gray-900">12</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <TrendingDown className="h-6 w-6 text-red-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Critical</p>
-              <p className="text-2xl font-bold text-gray-900">2</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search inventory..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <button className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </button>
-        </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Item
-        </button>
-      </div>
-
-      {/* Inventory Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Item Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Current Stock
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Min Threshold
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Updated
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {inventoryItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <span className="text-sm font-medium text-gray-900">{item.name}</span>
-                      <p className="text-xs text-gray-500">{item.quantity} {item.unit}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">{item.category}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium ${getStockPercentage(item.currentStock, item.minThreshold)}`}>
-                      {item.currentStock} {item.unit}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">{item.minThreshold} {item.unit}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-500">{item.lastUpdated}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        Edit
-                      </button>
-                      <button className="text-green-600 hover:text-green-800 text-sm font-medium">
-                        Restock
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Pagination */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="text-sm text-gray-700">
-          Showing <span className="font-medium">1</span> to <span className="font-medium">5</span> of{' '}
-          <span className="font-medium">156</span> results
-        </div>
-        <div className="flex items-center space-x-2">
-          <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-            Previous
-          </button>
-          <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">1</button>
-          <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
-} 
+}

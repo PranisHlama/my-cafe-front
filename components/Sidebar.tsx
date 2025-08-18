@@ -9,7 +9,10 @@ import {
   Package, 
   BarChart3, 
   Settings,
-  Home
+  Home,
+  Users,
+  Activity,
+  Shield
 } from "lucide-react";
 
 const navigation = [
@@ -19,6 +22,15 @@ const navigation = [
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
+];
+
+const adminNavigation = [
+  { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Audit Logs", href: "/admin/audit-logs", icon: Activity },
+];
+
+const authNavigation = [
+  { name: "Sessions", href: "/auth/sessions", icon: Shield },
 ];
 
 export default function Sidebar() {
@@ -57,6 +69,62 @@ export default function Sidebar() {
             </Link>
           );
         })}
+        
+        {/* Admin Navigation */}
+        <div className="pt-4 mt-4 border-t border-gray-700">
+          <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Administration
+          </h3>
+          {adminNavigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                }`}
+              >
+                <item.icon
+                  className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                    isActive ? "text-white" : "text-gray-400 group-hover:text-white"
+                  }`}
+                />
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+        
+        {/* Auth Navigation */}
+        <div className="pt-4 mt-4 border-t border-gray-700">
+          <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Security
+          </h3>
+          {authNavigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                }`}
+              >
+                <item.icon
+                  className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                    isActive ? "text-white" : "text-gray-400 group-hover:text-white"
+                  }`}
+                />
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       {/* User Info */}

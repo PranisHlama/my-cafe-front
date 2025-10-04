@@ -14,15 +14,17 @@ export default function RoleSlots({
 }) {
   const user =
     typeof window !== "undefined" ? AuthService.getCurrentUser() : null;
-  const userRole = (user?.role as unknown as string) || "";
+  const userRole = user?.role;
 
-  const isAdmin =
-    userRole === "admin" ||
-    AuthService.hasAnyRole([UserRole.OWNER, UserRole.MANAGER]);
-  const isCashier =
-    userRole === "cashier" || AuthService.hasRole(UserRole.CASHIER);
-  const isCustomer =
-    userRole === "customer" || AuthService.hasRole(UserRole.CUSTOMER);
+  // Check if user is authenticated first
+  if (!user || !AuthService.isAuthenticated()) {
+    return null;
+  }
+
+  // Check roles using the proper enum values
+  const isAdmin = AuthService.hasAnyRole([UserRole.OWNER, UserRole.MANAGER]);
+  const isCashier = AuthService.hasRole(UserRole.CASHIER);
+  const isCustomer = AuthService.hasRole(UserRole.CUSTOMER);
 
   return (
     <>

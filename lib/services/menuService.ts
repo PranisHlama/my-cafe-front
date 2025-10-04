@@ -10,6 +10,7 @@ export interface Category {
   is_active: boolean;
   created: string;
   updated: string;
+  menu_items_count?: number;
 }
 
 export interface ModifierGroup {
@@ -40,6 +41,7 @@ export interface MenuItem {
   name: string;
   description?: string;
   category: number;
+  category_name: string;
   base_price: string;
   is_available: boolean;
   is_featured: boolean;
@@ -47,10 +49,11 @@ export interface MenuItem {
   calories?: number;
   allergens?: string;
   preparation_time?: number;
-  modifier_groups: number[];
+  modifier_groups: ModifierGroup[];
   display_order: number;
   created: string;
   updated: string;
+  pricing_rules: PricingRule[];
 }
 
 export type MenuItemCreateInput = {

@@ -23,7 +23,21 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
 
     // Attach access token if available
-    const token = AuthService.getAccessToken?.();
+    let token = AuthService.getAccessToken?.();
+    const isRefreshEndpoint = endpoint.includes('/api/auth/refresh/');
+    const isLoginEndpoint = endpoint.includes('/api/auth/login/');
+
+    // Proactive refresh before request if access token is expired
+    if (token && AuthService.isTokenExpired?.() && !isRefreshEndpoint && !isLoginEndpoint) {
+      try {
+        await AuthService.refreshToken?.();
+        token = AuthService.getAccessToken?.();
+      } catch {
+        // Clear auth and proceed unauthenticated so public endpoints keep working
+        try { (AuthService as any).clearAuth?.(); } catch {}
+        token = null as any;
+      }
+    }
     const headers: HeadersInit = {
       ...(options.headers || {}),
       'Content-Type': 'application/json',
@@ -46,7 +60,8 @@ class ApiClient {
     }
 
     // If token expired and we haven't retried yet, try to refresh and retry
-    if (response.status === 401 && retry && AuthService.refreshToken) {
+    // Never attempt refresh for the refresh endpoint itself to avoid loops
+    if (response.status === 401 && retry && AuthService.refreshToken && !isRefreshEndpoint) {
       try {
         await AuthService.refreshToken();
         // Try again with new token

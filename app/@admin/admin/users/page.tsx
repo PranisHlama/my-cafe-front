@@ -1,9 +1,18 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Shield, User, MoreHorizontal } from 'lucide-react';
-import { AdminGuard } from '../../../components/auth/PermissionGuard';
-import { UserRole, ROLE_DESCRIPTIONS } from '../../../lib/types/auth';
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  Shield,
+  User,
+  MoreHorizontal,
+} from "lucide-react";
+import { AdminGuard } from "../../../../components/auth/PermissionGuard";
+import { UserRole, ROLE_DESCRIPTIONS } from "../../../../lib/types/auth";
 
 interface User {
   id: string;
@@ -21,123 +30,127 @@ interface User {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all");
 
   // Mock data - replace with actual API call
   useEffect(() => {
     const mockUsers: User[] = [
       {
-        id: '1',
-        email: 'owner@cafe.com',
-        firstName: 'John',
-        lastName: 'Owner',
+        id: "1",
+        email: "owner@cafe.com",
+        firstName: "John",
+        lastName: "Owner",
         role: UserRole.OWNER,
         isActive: true,
         isEmailVerified: true,
         isMFAEnabled: true,
-        lastLoginAt: '2024-01-15T10:30:00Z',
-        createdAt: '2024-01-01T00:00:00Z'
+        lastLoginAt: "2024-01-15T10:30:00Z",
+        createdAt: "2024-01-01T00:00:00Z",
       },
       {
-        id: '2',
-        email: 'manager@cafe.com',
-        firstName: 'Sarah',
-        lastName: 'Manager',
+        id: "2",
+        email: "manager@cafe.com",
+        firstName: "Sarah",
+        lastName: "Manager",
         role: UserRole.MANAGER,
         isActive: true,
         isEmailVerified: true,
         isMFAEnabled: true,
-        lastLoginAt: '2024-01-15T09:15:00Z',
-        createdAt: '2024-01-02T00:00:00Z'
+        lastLoginAt: "2024-01-15T09:15:00Z",
+        createdAt: "2024-01-02T00:00:00Z",
       },
       {
-        id: '3',
-        email: 'barista@cafe.com',
-        firstName: 'Mike',
-        lastName: 'Barista',
+        id: "3",
+        email: "barista@cafe.com",
+        firstName: "Mike",
+        lastName: "Barista",
         role: UserRole.BARISTA,
         isActive: true,
         isEmailVerified: true,
         isMFAEnabled: false,
-        lastLoginAt: '2024-01-15T08:45:00Z',
-        createdAt: '2024-01-03T00:00:00Z'
+        lastLoginAt: "2024-01-15T08:45:00Z",
+        createdAt: "2024-01-03T00:00:00Z",
       },
       {
-        id: '4',
-        email: 'cashier@cafe.com',
-        firstName: 'Emma',
-        lastName: 'Cashier',
+        id: "4",
+        email: "cashier@cafe.com",
+        firstName: "Emma",
+        lastName: "Cashier",
         role: UserRole.CASHIER,
         isActive: true,
         isEmailVerified: true,
         isMFAEnabled: false,
-        lastLoginAt: '2024-01-15T07:30:00Z',
-        createdAt: '2024-01-04T00:00:00Z'
+        lastLoginAt: "2024-01-15T07:30:00Z",
+        createdAt: "2024-01-04T00:00:00Z",
       },
       {
-        id: '5',
-        email: 'kitchen@cafe.com',
-        firstName: 'David',
-        lastName: 'Chef',
+        id: "5",
+        email: "kitchen@cafe.com",
+        firstName: "David",
+        lastName: "Chef",
         role: UserRole.KITCHEN,
         isActive: true,
         isEmailVerified: true,
         isMFAEnabled: false,
-        lastLoginAt: '2024-01-15T06:15:00Z',
-        createdAt: '2024-01-05T00:00:00Z'
-      }
+        lastLoginAt: "2024-01-15T06:15:00Z",
+        createdAt: "2024-01-05T00:00:00Z",
+      },
     ];
 
     setUsers(mockUsers);
     setLoading(false);
   }, []);
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.lastName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && user.isActive) ||
-                         (statusFilter === 'inactive' && !user.isActive);
-    
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && user.isActive) ||
+      (statusFilter === "inactive" && !user.isActive);
+
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
       case UserRole.OWNER:
-        return 'bg-purple-100 text-purple-800';
+        return "bg-purple-100 text-purple-800";
       case UserRole.MANAGER:
-        return 'bg-blue-100 text-blue-800';
+        return "bg-blue-100 text-blue-800";
       case UserRole.BARISTA:
-        return 'bg-green-100 text-green-800';
+        return "bg-green-100 text-green-800";
       case UserRole.CASHIER:
-        return 'bg-yellow-100 text-yellow-800';
+        return "bg-yellow-100 text-yellow-800";
       case UserRole.KITCHEN:
-        return 'bg-orange-100 text-orange-800';
+        return "bg-orange-100 text-orange-800";
       case UserRole.CUSTOMER:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusBadgeColor = (isActive: boolean) => {
-    return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    return isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -154,7 +167,9 @@ export default function UsersPage() {
       <div className="p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600 mt-2">Manage system users, roles, and permissions</p>
+          <p className="text-gray-600 mt-2">
+            Manage system users, roles, and permissions
+          </p>
         </div>
 
         {/* Header Actions */}
@@ -170,23 +185,27 @@ export default function UsersPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}
+              onChange={(e) =>
+                setRoleFilter(e.target.value as UserRole | "all")
+              }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Roles</option>
-              {Object.values(UserRole).map(role => (
+              {Object.values(UserRole).map((role) => (
                 <option key={role} value={role}>
                   {role.charAt(0).toUpperCase() + role.slice(1)}
                 </option>
               ))}
             </select>
-            
+
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as "all" | "active" | "inactive")
+              }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
@@ -194,7 +213,7 @@ export default function UsersPage() {
               <option value="inactive">Inactive</option>
             </select>
           </div>
-          
+
           <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             Add User
@@ -242,14 +261,21 @@ export default function UsersPage() {
                           <div className="text-sm font-medium text-gray-900">
                             {user.firstName} {user.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-gray-500">
+                            {user.email}
+                          </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getRoleBadgeColor(user.role)}`}>
-                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${getRoleBadgeColor(
+                            user.role
+                          )}`}
+                        >
+                          {user.role.charAt(0).toUpperCase() +
+                            user.role.slice(1)}
                         </span>
                         <div className="ml-2 text-xs text-gray-500">
                           {ROLE_DESCRIPTIONS[user.role]}
@@ -257,19 +283,29 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeColor(user.isActive)}`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${getStatusBadgeColor(
+                          user.isActive
+                        )}`}
+                      >
+                        {user.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        user.isMFAEnabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {user.isMFAEnabled ? 'Enabled' : 'Disabled'}
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          user.isMFAEnabled
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {user.isMFAEnabled ? "Enabled" : "Disabled"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never'}
+                      {user.lastLoginAt
+                        ? formatDate(user.lastLoginAt)
+                        : "Never"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(user.createdAt)}
@@ -297,14 +333,17 @@ export default function UsersPage() {
         {/* Pagination */}
         <div className="mt-6 flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredUsers.length}</span> of{' '}
+            Showing <span className="font-medium">1</span> to{" "}
+            <span className="font-medium">{filteredUsers.length}</span> of{" "}
             <span className="font-medium">{users.length}</span> results
           </div>
           <div className="flex items-center space-x-2">
             <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
               Previous
             </button>
-            <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">1</button>
+            <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">
+              1
+            </button>
             <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
               Next
             </button>

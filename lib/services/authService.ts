@@ -27,26 +27,76 @@ export class AuthService {
   private static readonly REFRESH_TOKEN_KEY = 'cafe_refresh_token';
   private static readonly USER_KEY = 'cafe_user';
 
+  // Check if we're on the client side
+  private static isClient(): boolean {
+    return typeof window !== 'undefined';
+  }
+
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
-  const response = await apiClient.post<AuthResponse>('/api/auth/login/', credentials);
+    const response = await apiClient.post<any>('/api/auth/login/', credentials);
 
-  if (response.error) {
-    throw new Error(response.error);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (!response.data) {
+      throw new Error('Login failed');
+    }
+
+    // Support both our custom shape and SimpleJWT default shape
+    const access = response.data.accessToken || response.data.access;
+    const refresh = response.data.refreshToken || response.data.refresh;
+    if (!access || !refresh) {
+      throw new Error('Login failed: tokens missing');
+    }
+    this.setTokens(access, refresh);
+
+    // Persist user if backend provided, else create a minimal placeholder
+    if (response.data.user) {
+      this.setUser(response.data.user);
+    } else {
+      try {
+        const payload = JSON.parse(atob(access.split('.')[1]));
+        const minimalUser: any = {
+          id: String(payload.user_id || payload.sub || 'me'),
+          email: '',
+          firstName: '',
+          lastName: '',
+          role: UserRole.CUSTOMER,
+          permissions: [Permission.VIEW_MENU],
+          isActive: true,
+          isEmailVerified: true,
+          isMFAEnabled: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        this.setUser(minimalUser);
+      } catch {
+        // If decoding fails, still set a minimal user so guards work
+        const minimalUser: any = {
+          id: 'me',
+          email: '',
+          firstName: '',
+          lastName: '',
+          role: UserRole.CUSTOMER,
+          permissions: [Permission.VIEW_MENU],
+          isActive: true,
+          isEmailVerified: true,
+          isMFAEnabled: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        this.setUser(minimalUser);
+      }
+    }
+
+    return {
+      user: this.getCurrentUser() as any,
+      accessToken: access,
+      refreshToken: refresh,
+      expiresIn: 0,
+    } as any;
   }
-  if (!response.data) {
-    throw new Error('Login failed');
-  }
-
-  this.setTokens(response.data.accessToken, response.data.refreshToken);
-
-  // If your backend doesn't return user info, you should fetch it separately
-  if (response.data.user) {
-    this.setUser(response.data.user);
-  }
-
-  return response.data;
-}
 
   // Login
   // static async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -104,7 +154,8 @@ export class AuthService {
     refresh: refreshToken
   });
 
-  if (!response.data) {
+  if (response.error || !response.data) {
+    this.clearAuth();
     throw new Error('Token refresh failed');
   }
 
@@ -139,6 +190,8 @@ export class AuthService {
 
   // Get Current User
   static getCurrentUser(): User | null {
+    if (!this.isClient()) return null;
+    
     const userStr = localStorage.getItem(this.USER_KEY);
     if (!userStr) return null;
     
@@ -151,6 +204,8 @@ export class AuthService {
 
   // Check if user is authenticated
   static isAuthenticated(): boolean {
+    if (!this.isClient()) return false;
+    
     const token = this.getAccessToken();
     const user = this.getCurrentUser();
     
@@ -177,6 +232,8 @@ export class AuthService {
 
   // Check if token is expired
   static isTokenExpired(): boolean {
+    if (!this.isClient()) return true;
+    
     const token = this.getAccessToken();
     if (!token) return true;
     
@@ -191,6 +248,8 @@ export class AuthService {
 
   // Check if user has specific permission
   static hasPermission(permission: Permission): boolean {
+    if (!this.isClient()) return false;
+    
     const user = this.getCurrentUser();
     if (!user) return false;
     
@@ -199,16 +258,22 @@ export class AuthService {
 
   // Check if user has any of the specified permissions
   static hasAnyPermission(permissions: Permission[]): boolean {
+    if (!this.isClient()) return false;
+    
     return permissions.some(permission => this.hasPermission(permission));
   }
 
   // Check if user has all of the specified permissions
   static hasAllPermissions(permissions: Permission[]): boolean {
+    if (!this.isClient()) return false;
+    
     return permissions.every(permission => this.hasPermission(permission));
   }
 
   // Check if user has specific role
   static hasRole(role: UserRole): boolean {
+    if (!this.isClient()) return false;
+    
     const user = this.getCurrentUser();
     if (!user) return false;
     
@@ -217,6 +282,8 @@ export class AuthService {
 
   // Check if user has any of the specified roles
   static hasAnyRole(roles: UserRole[]): boolean {
+    if (!this.isClient()) return false;
+    
     return roles.some(role => this.hasRole(role));
   }
 
@@ -336,26 +403,29 @@ export class AuthService {
 
   // Private helper methods
   private static setTokens(accessToken: string, refreshToken: string): void {
+    if (!this.isClient()) return;
     localStorage.setItem(this.TOKEN_KEY, accessToken);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
   }
 
   private static setUser(user: User): void {
+    if (!this.isClient()) return;
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
   }
 
   // Public methods for token access
   static getAccessToken(): string | null {
-    if (typeof window === "undefined") return null; // server-side
+    if (!this.isClient()) return null;
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
   static getRefreshToken(): string | null {
-    if (typeof window === "undefined") return null;
+    if (!this.isClient()) return null;
     return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
 
   private static clearAuth(): void {
+    if (!this.isClient()) return;
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);

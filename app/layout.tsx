@@ -16,12 +16,10 @@ export default function RootLayout({
   children,
   admin,
   cashier,
-  customer,
 }: {
   children: React.ReactNode;
   admin?: React.ReactNode;
   cashier?: React.ReactNode;
-  customer?: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -30,7 +28,7 @@ export default function RootLayout({
           <Sidebar />
           <main className="flex-1 overflow-auto">
             {children}
-            <RoleSlots admin={admin} cashier={cashier} customer={customer} />
+            <RoleSlots admin={admin} cashier={cashier} />
           </main>
         </div>
         <TokenDebugger />

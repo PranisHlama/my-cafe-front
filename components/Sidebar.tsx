@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -63,19 +64,44 @@ const authNavigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const currentUser = AuthService.getCurrentUser();
+    setUser(currentUser);
+  }, []);
 
   // Determine role and sidebar data from backend
-  const user =
-    typeof window !== "undefined" ? AuthService.getCurrentUser() : null;
   const userRole = (user?.role as unknown as string) || "";
   const backendSidebar: Array<{ name: string; href: string }> | null =
     Array.isArray((user as any)?.sidebar) ? (user as any).sidebar : null;
 
   const isAdmin =
-    AuthService.hasAnyRole([UserRole.OWNER, UserRole.MANAGER]) ||
-    userRole === "admin";
+    isClient &&
+    (AuthService.hasAnyRole([UserRole.OWNER, UserRole.MANAGER]) ||
+      userRole === "admin");
   const isCashier =
-    AuthService.hasRole(UserRole.CASHIER) || userRole === "cashier";
+    isClient &&
+    (AuthService.hasRole(UserRole.CASHIER) || userRole === "cashier");
+
+  // Show loading state during hydration
+  if (!isClient) {
+    return (
+      <div className="flex h-full w-64 flex-col bg-gray-900">
+        <div className="flex h-16 items-center justify-center border-b border-gray-800">
+          <div className="flex items-center space-x-2">
+            <Home className="h-8 w-8 text-white" />
+            <span className="text-xl font-bold text-white">Cafe Manager</span>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-400">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   // Choose main navigation
   const mainNavigation = backendSidebar

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { AuthService } from "@/lib/services/authService";
 import { UserRole } from "@/lib/types/auth";
 import { DataTable, Column } from "@/components/ui/DataTable";
-import { UsersService, UserDTO } from "@/lib/services/customersService";
+import { CustomersService, CustomerDTO } from "@/lib/services/customersService";
 
 interface ViewCustomer {
   name: string;
@@ -36,20 +36,17 @@ export default function CustomersPage() {
     return d.toLocaleDateString();
   };
 
-  const mapCustomers = (data: UserDTO[]): ViewCustomer[] =>
-    data.map((u) => ({
-      name:
-        u.first_name || u.last_name
-          ? `${u.first_name} ${u.last_name}`.trim()
-          : u.username,
-      email: u.email || "-",
-      since: formatDate(u.date_joined),
+  const mapCustomers = (data: CustomerDTO[]): ViewCustomer[] =>
+    data.map((c) => ({
+      name: c.name,
+      email: c.email || "-",
+      since: formatDate(c.created_at),
     }));
 
   const load = async () => {
     try {
       setLoading(true);
-      const data = await UsersService.list("customer");
+      const data = await CustomersService.list();
       setRows(mapCustomers(data));
     } catch (e: any) {
       setError(e?.message || "Failed to load customers");
@@ -98,7 +95,6 @@ export default function CustomersPage() {
   // --- Main Page ---
   return (
     <div className="p-6">
-    
       <DataTable
         data={rows}
         columns={columns}

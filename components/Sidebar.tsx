@@ -66,11 +66,13 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
     const currentUser = AuthService.getCurrentUser();
     setUser(currentUser);
+    setIsLoading(false);
   }, []);
 
   // Determine role and sidebar data from backend
@@ -87,7 +89,7 @@ export default function Sidebar() {
     (AuthService.hasRole(UserRole.CASHIER) || userRole === "cashier");
 
   // Show loading state during hydration
-  if (!isClient) {
+  if (!isClient || isLoading) {
     return (
       <div className="flex h-full w-64 flex-col bg-gray-900">
         <div className="flex h-16 items-center justify-center border-b border-gray-800">

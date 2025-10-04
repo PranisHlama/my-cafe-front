@@ -9,12 +9,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import { DashboardGuard } from '../../components/auth/PermissionGuard';
+import { DashboardGuard } from "../../../components/auth/PermissionGuard";
 
 export default function DashboardPage() {
   return (
     // <DashboardGuard>
-      <div className="p-6">
+    <div className="p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-2">

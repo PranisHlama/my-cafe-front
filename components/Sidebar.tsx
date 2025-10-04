@@ -2,26 +2,54 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Utensils, 
-  Package, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Utensils,
+  Package,
+  BarChart3,
   Settings,
   Home,
   Users,
   Activity,
-  Shield
+  Shield,
+  Circle,
 } from "lucide-react";
+import { AuthService } from "@/lib/services/authService";
+import { UserRole } from "@/lib/types/auth";
 
-const navigation = [
+// Resolve icon component by display name
+const resolveIcon = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes("dashboard")) return LayoutDashboard;
+  if (n.includes("order")) return ShoppingCart;
+  if (n.includes("customer")) return Users;
+  if (n.includes("menu")) return Utensils;
+  if (n.includes("invent")) return Package;
+  if (n.includes("report")) return BarChart3;
+  if (n.includes("setting")) return Settings;
+  if (n.includes("audit")) return Activity;
+  if (n.includes("session")) return Shield;
+  if (n.includes("home")) return Home;
+  return Circle;
+};
+
+const defaultNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
+  { name: "Customers", href: "/customers", icon: Users },
   { name: "Menu", href: "/menu", icon: Utensils },
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
+];
+
+// Cashier-focused navigation
+const cashierNavigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Orders", href: "/orders", icon: ShoppingCart },
+  { name: "Customers", href: "/customers", icon: Users },
+  { name: "Menu", href: "/menu", icon: Utensils },
 ];
 
 const adminNavigation = [
@@ -36,6 +64,31 @@ const authNavigation = [
 export default function Sidebar() {
   const pathname = usePathname();
 
+  // Determine role and sidebar data from backend
+  const user =
+    typeof window !== "undefined" ? AuthService.getCurrentUser() : null;
+  const userRole = (user?.role as unknown as string) || "";
+  const backendSidebar: Array<{ name: string; href: string }> | null =
+    Array.isArray((user as any)?.sidebar) ? (user as any).sidebar : null;
+
+  const isAdmin =
+    AuthService.hasAnyRole([UserRole.OWNER, UserRole.MANAGER]) ||
+    userRole === "admin";
+  const isCashier =
+    AuthService.hasRole(UserRole.CASHIER) || userRole === "cashier";
+
+  // Choose main navigation
+  const mainNavigation = backendSidebar
+    ? backendSidebar.map((item) => ({ ...item, icon: resolveIcon(item.name) }))
+    : isAdmin
+    ? defaultNavigation
+    : isCashier
+    ? cashierNavigation
+    : defaultNavigation;
+
+  // If using backend-provided sidebar, we won't render separate Admin/Security sections
+  const renderExtraSections = !backendSidebar && isAdmin;
+
   return (
     <div className="flex h-full w-64 flex-col bg-gray-900">
       {/* Logo */}
@@ -48,7 +101,8 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-2 py-4">
-        {navigation.map((item) => {
+        {mainNavigation.map((item) => {
+          const Icon = (item as any).icon || Circle;
           const isActive = pathname === item.href;
           return (
             <Link
@@ -60,71 +114,81 @@ export default function Sidebar() {
                   : "text-gray-300 hover:bg-gray-700 hover:text-white"
               }`}
             >
-              <item.icon
+              <Icon
                 className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                  isActive ? "text-white" : "text-gray-400 group-hover:text-white"
+                  isActive
+                    ? "text-white"
+                    : "text-gray-400 group-hover:text-white"
                 }`}
               />
               {item.name}
             </Link>
           );
         })}
-        
+
         {/* Admin Navigation */}
-        <div className="pt-4 mt-4 border-t border-gray-700">
-          <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Administration
-          </h3>
-          {adminNavigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isActive
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                }`}
-              >
-                <item.icon
-                  className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                    isActive ? "text-white" : "text-gray-400 group-hover:text-white"
+        {renderExtraSections && (
+          <div className="pt-4 mt-4 border-t border-gray-700">
+            <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              Administration
+            </h3>
+            {adminNavigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-300 hover:bg-gray-700 hover:text-white"
                   }`}
-                />
-                {item.name}
-              </Link>
-            );
-          })}
-        </div>
-        
+                >
+                  <item.icon
+                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                      isActive
+                        ? "text-white"
+                        : "text-gray-400 group-hover:text-white"
+                    }`}
+                  />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
         {/* Auth Navigation */}
-        <div className="pt-4 mt-4 border-t border-gray-700">
-          <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Security
-          </h3>
-          {authNavigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isActive
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                }`}
-              >
-                <item.icon
-                  className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                    isActive ? "text-white" : "text-gray-400 group-hover:text-white"
+        {renderExtraSections && (
+          <div className="pt-4 mt-4 border-t border-gray-700">
+            <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              Security
+            </h3>
+            {authNavigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-300 hover:bg-gray-700 hover:text-white"
                   }`}
-                />
-                {item.name}
-              </Link>
-            );
-          })}
-        </div>
+                >
+                  <item.icon
+                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                      isActive
+                        ? "text-white"
+                        : "text-gray-400 group-hover:text-white"
+                    }`}
+                  />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* User Info */}
@@ -141,4 +205,4 @@ export default function Sidebar() {
       </div>
     </div>
   );
-} 
+}

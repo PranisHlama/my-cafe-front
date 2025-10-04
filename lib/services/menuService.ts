@@ -53,6 +53,22 @@ export interface MenuItem {
   updated: string;
 }
 
+export type MenuItemCreateInput = {
+  name: string;
+  description?: string | null;
+  category: number;
+  base_price: string; // send as string to preserve decimal
+  is_available: boolean;
+  is_featured: boolean;
+  image_url?: string | null;
+  calories?: number | null;
+  allergens?: string | null;
+  preparation_time?: number | null;
+  display_order?: number;
+};
+
+export type MenuItemUpdateInput = Partial<MenuItemCreateInput>;
+
 export interface PricingRule {
   id: number;
   name: string;
@@ -133,6 +149,34 @@ export class MenuService {
       throw new Error(response.error);
     }
     return response.data || [];
+  }
+
+  // CRUD for Menu Items
+  static async createMenuItem(payload: MenuItemCreateInput): Promise<MenuItem | null> {
+    const res = await apiClient.post<MenuItem>('/api/menu-items/', payload);
+    if (res.error) {
+      console.error('Failed to create menu item:', res.error);
+      return null;
+    }
+    return res.data ?? null;
+  }
+
+  static async updateMenuItem(id: number, payload: MenuItemUpdateInput): Promise<MenuItem | null> {
+    const res = await apiClient.put<MenuItem>(`/api/menu-items/${id}/`, payload);
+    if (res.error) {
+      console.error('Failed to update menu item:', res.error);
+      return null;
+    }
+    return res.data ?? null;
+  }
+
+  static async deleteMenuItem(id: number): Promise<boolean> {
+    const res = await apiClient.delete(`/api/menu-items/${id}/`);
+    if (res.error) {
+      console.error('Failed to delete menu item:', res.error);
+      return false;
+    }
+    return true;
   }
 
   // Modifier Groups

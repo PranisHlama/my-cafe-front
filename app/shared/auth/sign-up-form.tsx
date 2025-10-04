@@ -1,11 +1,11 @@
-import React from 'react'
-import {signup} from '@/app/actions/auth'
+import React from "react";
+import { signup } from "@/app/@admin/actions/auth";
 
 function signUpForm() {
   return (
-    <form action = {signup}>
-        <div>
-            <label htmlFor="name">Name</label>
+    <form action={signup}>
+      <div>
+        <label htmlFor="name">Name</label>
         <input id="name" name="name" placeholder="Name" />
       </div>
       <div>
@@ -18,7 +18,7 @@ function signUpForm() {
       </div>
       <button type="submit">Sign Up</button>
     </form>
-  )
+  );
 }
 
-export default signUpForm
+export default signUpForm;

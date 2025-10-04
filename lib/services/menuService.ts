@@ -10,6 +10,7 @@ export interface Category {
   is_active: boolean;
   created: string;
   updated: string;
+  menu_items_count?: number;
 }
 
 export interface ModifierGroup {

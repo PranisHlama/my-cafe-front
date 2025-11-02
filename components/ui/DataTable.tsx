@@ -8,6 +8,7 @@ export interface Column<T> {
   header: string;
   render?: (value: any, item: T) => React.ReactNode;
   sortable?: boolean;
+  enableSorting?: boolean;
   width?: string;
 }
 

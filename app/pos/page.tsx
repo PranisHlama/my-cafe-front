@@ -6,6 +6,7 @@ import { AuthService } from "@/lib/services/authService";
 import { UserRole } from "@/lib/types/auth";
 import { MenuService, MenuItem, Category } from "@/lib/services/menuService";
 import { OrdersService, OrderItemInput } from "@/lib/services/ordersService";
+import { apiClient } from "@/lib/api";
 
 type CartLine = {
   item: MenuItem;
@@ -27,6 +28,8 @@ export default function CashierPOSPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -111,11 +114,13 @@ export default function CashierPOSPage() {
   const total = subtotal + tax;
 
   const generateOrderNumber = () => {
-    const t = new Date();
-    return `POS-${t.getFullYear()}${String(t.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}${String(t.getDate()).padStart(2, "0")}-${t.getTime()}`;
+    // Always keep under backend max_length=20
+    const ts36 = Date.now().toString(36).toUpperCase();
+    const rand = Math.floor(Math.random() * 36 * 36)
+      .toString(36)
+      .toUpperCase()
+      .padStart(2, "0");
+    return `P-${ts36}-${rand}`.slice(0, 20);
   };
 
   const placeOrder = async () => {
@@ -123,6 +128,7 @@ export default function CashierPOSPage() {
     setSubmitting(true);
     setError(null);
     setSuccess(null);
+    setPaymentUrl(null);
     try {
       const created = await OrdersService.create({
         order_number: generateOrderNumber(),
@@ -141,8 +147,31 @@ export default function CashierPOSPage() {
       }
 
       setSuccess(`Order ${created.order_number} created`);
+
+      // Request Stripe checkout session URL
+      try {
+        const origin =
+          typeof window !== "undefined" ? window.location.origin : "";
+        const res = await apiClient.post<{ url: string }>(
+          "/api/payments/create-checkout-session/",
+          {
+            order_id: created.id,
+            success_url: `${origin}/orders`,
+            cancel_url: `${origin}/pos`,
+          }
+        );
+        if (!res.error && res.data?.url) {
+          setPaymentUrl(res.data.url);
+          setShowPaymentModal(true);
+        } else {
+          // Fallback: still navigate to orders if payment link creation fails
+          setError(res.error || "Failed to initialize payment session");
+        }
+      } catch (e: any) {
+        setError(e?.message || "Failed to initialize payment session");
+      }
+
       clearCart();
-      router.push("/orders");
     } catch (e: any) {
       setError(e?.message || "Failed to place order");
     } finally {
@@ -353,6 +382,49 @@ export default function CashierPOSPage() {
           </div>
         </div>
       </div>
+
+      {showPaymentModal && paymentUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowPaymentModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              Scan to Pay
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Use your phone to scan and complete payment.
+            </p>
+            <div className="flex items-center justify-center mb-4">
+              <img
+                alt="Payment QR"
+                className="h-56 w-56"
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
+                  paymentUrl
+                )}&size=300x300`}
+              />
+            </div>
+            <a
+              href={paymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 mb-2"
+            >
+              Open Payment Link
+            </a>
+            <button
+              onClick={() => {
+                setShowPaymentModal(false);
+                router.push("/orders");
+              }}
+              className="block w-full rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

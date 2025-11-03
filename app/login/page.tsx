@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthService } from "@/lib/services/authService";
+import { UserRole } from "@/lib/types/auth";
 
 export default function SignInPage() {
   const [username, setUsername] = useState("");
@@ -13,9 +14,19 @@ export default function SignInPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await AuthService.login({ username, password, rememberMe });
-      // ✅ Redirect after successful login
-      router.push("/dashboard"); // change to your dashboard route
+      const auth = await AuthService.login({ username, password, rememberMe });
+      const role = auth?.user?.role;
+
+      // Role-based redirect
+      if (role === UserRole.OWNER || role === UserRole.MANAGER) {
+        router.push("/dashboard");
+      } else if (role === UserRole.CASHIER) {
+        router.push("/orders");
+      } else if (role === UserRole.BARISTA || role === UserRole.KITCHEN) {
+        router.push("/orders");
+      } else {
+        router.push("/menu");
+      }
     } catch (err: any) {
       setError(err.message || "Login failed");
     }
@@ -23,7 +34,10 @@ export default function SignInPage() {
 
   return (
     <div className="flex justify-center items-center h-screen">
-      <form onSubmit={handleSubmit} className="p-6 shadow rounded bg-white w-80">
+      <form
+        onSubmit={handleSubmit}
+        className="p-6 shadow rounded bg-white w-80"
+      >
         <h2 className="text-xl font-bold mb-4">Sign In</h2>
         {error && <p className="text-red-500">{error}</p>}
 
@@ -59,7 +73,10 @@ export default function SignInPage() {
           Remember me
         </label>
 
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
           Sign In
         </button>
       </form>

@@ -107,6 +107,33 @@ export class MenuService {
     return response.data || [];
   }
 
+  static async createCategory(payload: Pick<Category, 'name' | 'description' | 'display_order' | 'is_active'>): Promise<Category | null> {
+    const res = await apiClient.post<Category>('/api/categories/', payload);
+    if (res.error) {
+      console.error('Failed to create category:', res.error);
+      return null;
+    }
+    return res.data ?? null;
+  }
+
+  static async updateCategory(id: number, payload: Partial<Pick<Category, 'name' | 'description' | 'display_order' | 'is_active'>>): Promise<Category | null> {
+    const res = await apiClient.put<Category>(`/api/categories/${id}/`, payload);
+    if (res.error) {
+      console.error('Failed to update category:', res.error);
+      return null;
+    }
+    return res.data ?? null;
+  }
+
+  static async deleteCategory(id: number): Promise<boolean> {
+    const res = await apiClient.delete(`/api/categories/${id}/`);
+    if (res.error) {
+      console.error('Failed to delete category:', res.error);
+      return false;
+    }
+    return true;
+  }
+
   static async getCategory(id: number): Promise<Category> {
     const response = await apiClient.get<Category>(`/api/categories/${id}/`);
     if (response.error) {
@@ -159,7 +186,7 @@ export class MenuService {
     const res = await apiClient.post<MenuItem>('/api/menu-items/', payload);
     if (res.error) {
       console.error('Failed to create menu item:', res.error);
-      return null;
+      throw new Error(res.error);
     }
     return res.data ?? null;
   }
@@ -168,7 +195,7 @@ export class MenuService {
     const res = await apiClient.put<MenuItem>(`/api/menu-items/${id}/`, payload);
     if (res.error) {
       console.error('Failed to update menu item:', res.error);
-      return null;
+      throw new Error(res.error);
     }
     return res.data ?? null;
   }

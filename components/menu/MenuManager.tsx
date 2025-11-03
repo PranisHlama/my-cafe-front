@@ -25,7 +25,7 @@ export default function MenuManager() {
     name: "",
     description: "",
     category: 0,
-    base_price: "0.00",
+    base_price: "1.00",
     is_available: true,
     is_featured: false,
     image_url: "",
@@ -69,7 +69,7 @@ export default function MenuManager() {
       name: "",
       description: "",
       category: categories[0]?.id ?? 0,
-      base_price: "0.00",
+      base_price: "1.00",
       is_available: true,
       is_featured: false,
       image_url: "",
@@ -120,6 +120,12 @@ export default function MenuManager() {
     setIsSubmitting(true);
     setError(null);
     try {
+      // Frontend validation for price > 0
+      if (!form.base_price || parseFloat(form.base_price) <= 0) {
+        setError("Price must be greater than zero.");
+        setIsSubmitting(false);
+        return;
+      }
       if (editingItem) {
         const payload: MenuItemUpdateInput = { ...form };
         const updated = await MenuService.updateMenuItem(
@@ -143,8 +149,8 @@ export default function MenuManager() {
           setError("Failed to create menu item");
         }
       }
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

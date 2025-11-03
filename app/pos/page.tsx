@@ -111,11 +111,14 @@ export default function CashierPOSPage() {
   const total = subtotal + tax;
 
   const generateOrderNumber = () => {
-    const t = new Date();
-    return `POS-${t.getFullYear()}${String(t.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}${String(t.getDate()).padStart(2, "0")}-${t.getTime()}`;
+    // Keep under backend max_length=20
+    const ts36 = Date.now().toString(36).toUpperCase();
+    const rand = Math.floor(Math.random() * 36 * 36)
+      .toString(36)
+      .toUpperCase()
+      .padStart(2, "0");
+    // P- + ts36 (max ~10) + - + 2 = typically <= 16
+    return `P-${ts36}-${rand}`.slice(0, 20);
   };
 
   const placeOrder = async () => {

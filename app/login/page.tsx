@@ -21,9 +21,9 @@ export default function SignInPage() {
       if (role === UserRole.OWNER || role === UserRole.MANAGER) {
         router.push("/dashboard");
       } else if (role === UserRole.CASHIER) {
-        router.push("/orders");
+        router.push("/pos");
       } else if (role === UserRole.BARISTA || role === UserRole.KITCHEN) {
-        router.push("/orders");
+        router.push("/pos");
       } else {
         router.push("/menu");
       }

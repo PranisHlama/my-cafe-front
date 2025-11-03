@@ -48,6 +48,7 @@ const defaultNavigation = [
 // Cashier-focused navigation
 const cashierNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "POS", href: "/pos", icon: ShoppingCart },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Menu", href: "/menu", icon: Utensils },

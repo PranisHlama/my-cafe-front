@@ -330,3 +330,113 @@ export async function deleteInventoryItem(id: number): Promise<boolean> {
   }
   return true;
 } 
+
+// Inventory Transactions and Adjustments
+export type InventoryTransaction = {
+  id: number;
+  inventory_item: number;
+  inventory_item_name: string;
+  transaction_type: 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'WASTE';
+  quantity: string; // backend returns Decimal as string
+  reference?: string | null;
+  created_at: string;
+  created_by?: string | null;
+};
+
+export async function getLowStockInventory(): Promise<InventoryItem[]> {
+  const res = await apiClient.get<InventoryItem[]>("/api/inventory/low_stock/");
+  if (res.error) {
+    console.error("Failed to fetch low stock inventory:", res.error);
+    return [];
+  }
+  return res.data || [];
+}
+
+export async function getInventoryTransactions(itemId: number): Promise<InventoryTransaction[]> {
+  const res = await apiClient.get<InventoryTransaction[]>(`/api/inventory/${itemId}/transactions/`);
+  if (res.error) {
+    console.error("Failed to fetch inventory transactions:", res.error);
+    return [];
+  }
+  return res.data || [];
+}
+
+export type InventoryAdjustInput = {
+  transaction_type: 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'WASTE';
+  quantity: number | string;
+  reference?: string | null;
+  created_by?: string | null;
+};
+
+export async function adjustInventoryItem(id: number, payload: InventoryAdjustInput): Promise<{ item: InventoryItem; transaction: InventoryTransaction } | null> {
+  const res = await apiClient.post<{ item: InventoryItem; transaction: InventoryTransaction }>(`/api/inventory/${id}/adjust/`, payload);
+  if (res.error) {
+    console.error("Failed to adjust inventory:", res.error);
+    return null;
+  }
+  return res.data ?? null;
+}
+
+// Recipe (Menu Item Ingredients)
+export type Recipe = {
+  id: number;
+  menu_item: number;
+  menu_item_name: string;
+  inventory_item: number;
+  inventory_item_name: string;
+  inventory_item_unit: string;
+  quantity_required: string; // backend returns Decimal as string
+};
+
+export type RecipeCreateInput = {
+  menu_item: number;
+  inventory_item: number;
+  quantity_required: number | string;
+};
+
+export type RecipeUpdateInput = Partial<RecipeCreateInput>;
+
+export async function getRecipes(): Promise<Recipe[]> {
+  const res = await apiClient.get<Recipe[]>("/api/recipes/");
+  if (res.error) {
+    console.error("Failed to fetch recipes:", res.error);
+    return [];
+  }
+  return res.data || [];
+}
+
+export async function getRecipesByMenuItem(menuItemId: number): Promise<Recipe[]> {
+  const res = await apiClient.get<Recipe[]>(`/api/recipes/by_menu_item/?menu_item_id=${menuItemId}`);
+  if (res.error) {
+    console.error("Failed to fetch recipes for menu item:", res.error);
+    return [];
+  }
+  return res.data || [];
+}
+
+export async function createRecipe(payload: RecipeCreateInput): Promise<Recipe | null> {
+  const res = await apiClient.post<Recipe>("/api/recipes/", payload);
+  if (res.error) {
+    console.error("Failed to create recipe:", res.error);
+    return null;
+  }
+  return res.data ?? null;
+}
+
+export async function updateRecipe(id: number, payload: RecipeUpdateInput): Promise<Recipe | null> {
+  const res = await apiClient.put<Recipe>(`/api/recipes/${id}/`, payload);
+  if (res.error) {
+    console.error("Failed to update recipe:", res.error);
+    return null;
+  }
+  return res.data ?? null;
+}
+
+export async function deleteRecipe(id: number): Promise<boolean> {
+  const res = await apiClient.delete(`/api/recipes/${id}/`);
+  if (res.error) {
+    console.error("Failed to delete recipe:", res.error);
+    return false;
+  }
+  return true;
+}

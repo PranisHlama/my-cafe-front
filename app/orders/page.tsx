@@ -78,6 +78,16 @@ export default function OrdersPage() {
     }
   }, [isClient, isAdminOrCashier]);
 
+  const handleUpdateStatus = async (orderId: number, newStatus: OrderStatus) => {
+    try {
+      await OrdersService.setStatus(orderId, newStatus);
+      // Reload orders to reflect the change
+      await loadOrders();
+    } catch (err: any) {
+      alert(err?.message || "Failed to update order status");
+    }
+  };
+
   const mapOrdersToView = (data: OrderDTO[]): OrderView[] => {
     return data.map((order) => ({
       ...order,
@@ -99,6 +109,67 @@ export default function OrdersPage() {
     { key: "statusBadge", header: "Status", enableSorting: false },
     { key: "date", header: "Order Date" },
     { key: "completionDate", header: "Completion Date" },
+    {
+      key: "actions",
+      header: "Actions",
+      enableSorting: false,
+      render: (_: any, order: any) => (
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {order.status === "pending" && (
+            <>
+              <button
+                onClick={() => handleUpdateStatus(order.id, "preparing")}
+                className="px-3 py-1 text-xs rounded bg-yellow-500 text-white hover:bg-yellow-600"
+              >
+                Start Preparing
+              </button>
+              <button
+                onClick={() => handleUpdateStatus(order.id, "completed")}
+                className="px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700"
+              >
+                Complete
+              </button>
+            </>
+          )}
+          {order.status === "preparing" && (
+            <>
+              <button
+                onClick={() => handleUpdateStatus(order.id, "ready")}
+                className="px-3 py-1 text-xs rounded bg-purple-600 text-white hover:bg-purple-700"
+              >
+                Mark Ready
+              </button>
+              <button
+                onClick={() => handleUpdateStatus(order.id, "completed")}
+                className="px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700"
+              >
+                Complete
+              </button>
+            </>
+          )}
+          {order.status === "ready" && (
+            <button
+              onClick={() => handleUpdateStatus(order.id, "completed")}
+              className="px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700"
+            >
+              Complete
+            </button>
+          )}
+          {(order.status === "pending" || order.status === "preparing") && (
+            <button
+              onClick={() => {
+                if (confirm("Are you sure you want to cancel this order?")) {
+                  handleUpdateStatus(order.id, "canceled");
+                }
+              }}
+              className="px-3 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      ),
+    },
   ];
 
   if (!isClient) {

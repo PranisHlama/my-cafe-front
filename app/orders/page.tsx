@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AuthService } from "@/lib/services/authService";
 import { UserRole } from "@/lib/types/auth";
 import {
@@ -38,6 +39,7 @@ interface OrderView
 }
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isClient, setIsClient] = useState(false);
   const [orders, setOrders] = useState<OrderView[]>([]);
@@ -145,7 +147,6 @@ export default function OrdersPage() {
 
   return (
     <div className="p-6">
-
       <DataTable
         data={orders}
         columns={columns}
@@ -154,6 +155,7 @@ export default function OrdersPage() {
         searchPlaceholder="Search orders..."
         showNewButton={false} // Orders are created through the order wizard
         itemsPerPage={10}
+        onRowClick={(item) => router.push(`/orders/${(item as any).id}`)}
       />
     </div>
   );

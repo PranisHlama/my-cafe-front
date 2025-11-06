@@ -7,8 +7,14 @@ import {
   MenuItemCreateInput,
   MenuItemUpdateInput,
   Category,
+  getInventory,
+  getRecipesByMenuItem,
+  createRecipe,
+  deleteRecipe,
+  Recipe,
 } from "@/lib/services/menuService";
 import { DataTable, Column } from "@/components/ui/DataTable";
+import type { InventoryItem } from "@/lib/definitions";
 
 export default function MenuManager() {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -20,6 +26,11 @@ export default function MenuManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Recipe/Ingredients state
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [newRecipe, setNewRecipe] = useState({ inventory_item: 0, quantity: 0 });
 
   const [form, setForm] = useState<MenuItemCreateInput>({
     name: "",
@@ -38,14 +49,19 @@ export default function MenuManager() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [menuItems, cats] = await Promise.all([
+        const [menuItems, cats, inventory] = await Promise.all([
           MenuService.getMenuItems(),
           MenuService.getCategories(),
+          getInventory(),
         ]);
         setItems(menuItems);
         setCategories(cats);
+        setInventoryItems(inventory);
         if (cats.length && form.category === 0) {
           setForm((f) => ({ ...f, category: cats[0].id }));
+        }
+        if (inventory.length && newRecipe.inventory_item === 0) {
+          setNewRecipe((r) => ({ ...r, inventory_item: inventory[0].id }));
         }
       } catch (e) {
         console.error("Failed to load menu data", e);
@@ -82,7 +98,7 @@ export default function MenuManager() {
     setIsModalOpen(true);
   };
 
-  const openEdit = (item: MenuItem) => {
+  const openEdit = async (item: MenuItem) => {
     setEditingItem(item);
     setForm({
       name: item.name,
@@ -98,12 +114,40 @@ export default function MenuManager() {
       display_order: item.display_order,
     });
     setError(null);
+    // Load recipes for this item
+    const itemRecipes = await getRecipesByMenuItem(item.id);
+    setRecipes(itemRecipes);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     if (isSubmitting) return;
     setIsModalOpen(false);
+    setRecipes([]);
+  };
+
+  const handleAddRecipe = async () => {
+    if (!editingItem) return;
+    if (newRecipe.quantity <= 0) {
+      alert("Quantity must be greater than zero");
+      return;
+    }
+    const created = await createRecipe({
+      menu_item: editingItem.id,
+      inventory_item: newRecipe.inventory_item,
+      quantity_required: newRecipe.quantity,
+    });
+    if (created) {
+      setRecipes((prev) => [...prev, created]);
+      setNewRecipe({ inventory_item: inventoryItems[0]?.id || 0, quantity: 0 });
+    }
+  };
+
+  const handleRemoveRecipe = async (recipeId: number) => {
+    const ok = await deleteRecipe(recipeId);
+    if (ok) {
+      setRecipes((prev) => prev.filter((r) => r.id !== recipeId));
+    }
   };
 
   const handleDelete = async (item: MenuItem) => {
@@ -429,6 +473,109 @@ export default function MenuManager() {
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
+
+              {/* Recipe/Ingredients Section - Only show when editing */}
+              {editingItem && (
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                    Ingredients (Inventory Consumed per Item)
+                  </h4>
+                  
+                  {recipes.length > 0 && (
+                    <div className="mb-3 border rounded overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                              Ingredient
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                              Quantity
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                              Unit
+                            </th>
+                            <th className="px-3 py-2"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {recipes.map((r) => (
+                            <tr key={r.id}>
+                              <td className="px-3 py-2 text-sm text-gray-900">
+                                {r.inventory_item_name}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-700">
+                                {r.quantity_required}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-gray-700">
+                                {r.inventory_item_unit}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRecipe(r.id)}
+                                  className="text-xs text-red-600 hover:text-red-800"
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Ingredient
+                      </label>
+                      <select
+                        value={newRecipe.inventory_item}
+                        onChange={(e) =>
+                          setNewRecipe({
+                            ...newRecipe,
+                            inventory_item: Number(e.target.value),
+                          })
+                        }
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        {inventoryItems.map((inv) => (
+                          <option key={inv.id} value={inv.id}>
+                            {inv.name} ({inv.unit})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-32">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={newRecipe.quantity}
+                        onChange={(e) =>
+                          setNewRecipe({
+                            ...newRecipe,
+                            quantity: Number(e.target.value),
+                          })
+                        }
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddRecipe}
+                      className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button

@@ -12,6 +12,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { AdminGuard } from "../../../../components/auth/PermissionGuard";
+import { AdminService } from "../../../../lib/services/adminService";
 
 interface DashboardStats {
   totalUsers: number;
@@ -36,24 +37,35 @@ export default function AdminDashboard() {
     completedOrders: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockStats: DashboardStats = {
-      totalUsers: 156,
-      totalOrders: 1247,
-      totalRevenue: 45678.9,
-      todayOrders: 23,
-      todayRevenue: 1234.56,
-      lowStockItems: 5,
-      pendingOrders: 8,
-      completedOrders: 15,
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      try {
+        setError(null);
+        const data = await AdminService.getDashboardStats();
+        if (isMounted) {
+          setStats(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          const message = err instanceof Error ? err.message : "Failed to load dashboard";
+          setError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    setTimeout(() => {
-      setStats(mockStats);
-      setLoading(false);
-    }, 1000);
+    fetchStats();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -67,6 +79,11 @@ export default function AdminDashboard() {
   return (
     <AdminGuard>
       <div className="p-6">
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">

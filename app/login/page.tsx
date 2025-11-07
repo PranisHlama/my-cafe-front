@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AuthService } from "@/lib/services/authService";
 import { UserRole } from "@/lib/types/auth";
@@ -11,22 +11,31 @@ export default function SignInPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const redirectByRole = (role?: UserRole | string | null) => {
+    if (role === UserRole.OWNER || role === UserRole.MANAGER || role === "admin") {
+      router.replace("/dashboard");
+    } else if (role === UserRole.CASHIER || role === UserRole.BARISTA || role === UserRole.KITCHEN || role === "cashier") {
+      router.replace("/pos");
+    } else {
+      router.replace("/menu");
+    }
+  };
+
+  useEffect(() => {
+    if (AuthService.isAuthenticated()) {
+      const currentUser: any = AuthService.getCurrentUser();
+      const role = currentUser?.role ?? currentUser?.user?.role ?? null;
+      redirectByRole(role);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const auth = await AuthService.login({ username, password, rememberMe });
       const role = auth?.user?.role;
-
-      // Role-based redirect
-      if (role === UserRole.OWNER || role === UserRole.MANAGER) {
-        router.push("/dashboard");
-      } else if (role === UserRole.CASHIER) {
-        router.push("/pos");
-      } else if (role === UserRole.BARISTA || role === UserRole.KITCHEN) {
-        router.push("/pos");
-      } else {
-        router.push("/menu");
-      }
+      redirectByRole(role);
     } catch (err: any) {
       setError(err.message || "Login failed");
     }

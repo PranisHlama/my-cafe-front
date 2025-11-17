@@ -54,14 +54,9 @@ const cashierNavigation = [
   { name: "Menu", href: "/menu", icon: Utensils },
 ];
 
-const adminNavigation = [
-  { name: "Users", href: "/admin/users", icon: Users },
-  { name: "Audit Logs", href: "/admin/audit-logs", icon: Activity },
-];
+const adminNavigation = [{ name: "Users", href: "/admin/users", icon: Users }];
 
-const authNavigation = [
-  { name: "Sessions", href: "/auth/sessions", icon: Shield },
-];
+const authNavigation: Array<{ name: string; href: string; icon: any }> = [];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -156,7 +151,7 @@ export default function Sidebar() {
         })}
 
         {/* Admin Navigation */}
-        {renderExtraSections && (
+        {renderExtraSections && adminNavigation.length > 0 && (
           <div className="pt-4 mt-4 border-t border-gray-700">
             <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
               Administration
@@ -188,7 +183,7 @@ export default function Sidebar() {
         )}
 
         {/* Auth Navigation */}
-        {renderExtraSections && (
+        {renderExtraSections && authNavigation.length > 0 && (
           <div className="pt-4 mt-4 border-t border-gray-700">
             <h3 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
               Security

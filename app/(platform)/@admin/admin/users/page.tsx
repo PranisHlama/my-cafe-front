@@ -11,8 +11,8 @@ import {
   User,
   MoreHorizontal,
 } from "lucide-react";
-import { AdminGuard } from "../../../../components/auth/PermissionGuard";
-import { UserRole, ROLE_DESCRIPTIONS } from "../../../../lib/types/auth";
+import { AdminGuard } from "@/components/auth/PermissionGuard";
+import { UserRole, ROLE_DESCRIPTIONS } from "@/lib/types/auth";
 
 interface User {
   id: string;
